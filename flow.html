@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>AI Workflow Automator Blueprint</title>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+
+        mermaid.initialize({
+            startOnLoad: true,
+            securityLevel: "loose", // Required for zooming
+            themeVariables: {
+                useMaxWidth: false // Prevents auto-resizing
+            }
+        });
+    </script>
+</head>
+<body>
+    <h1>Workflow Automator</h1>
+    
+    <div class="diagram">
+        <h2>System Architecture</h2>
+        <pre class="mermaid">
+flowchart TB
+    subgraph User["User Interface"]
+        A1[Landing Page<br>Next.js + TailwindCSS] --> A2[Auth Portal<br>NextAuth.js]
+        A2 --> A3[Workflow Input Form<br>React Hook Form + Zod]
+        A3 --> A4[Script Viewer/Editor<br>Monaco Editor]
+        A4 --> A5[Script Testing Console<br>xterm.js]
+        A4 --> A6[Save/Export Options<br>React Context API]
+        A6 --> A7[Script Dashboard<br>TanStack Table]
+    end
+
+    subgraph Backend["Backend Services"]
+        B1[FastAPI Server<br>Python 3.9+] --> B2[Auth Service<br>JWT + Bcrypt]
+        B1 --> B3[Script Generation Engine<br>LangChain + Llama]
+        B1 --> B4[Script Execution Sandbox<br>Docker + Pydantic]
+        B1 --> B5[Database Service<br>SQLAlchemy ORM]
+    end
+
+    subgraph AI["AI Components"]
+        C1[LangChain Orchestrator<br>LangChain 0.1.0+] --> C2[Llama Model Integration<br>Llama 3 / LlamaCpp]
+        C1 --> C3[Tool Library<br>Custom LangChain Tools]
+        C1 --> C4[Knowledge Retrieval<br>LangChain Retrievers]
+        C4 --> C5[Example Vector Database<br>FAISS / Chroma]
+        C4 --> C6[Documentation Index<br>HuggingFace Embeddings]
+        C3 --> C7[Email Connectors<br>Google API Client]
+        C3 --> C8[File System Tools<br>pathlib + shutil]
+        C3 --> C9[Cloud Storage Tools<br>boto3 / GCP Client]
+        C3 --> C10[Web Scraping Tools<br>BeautifulSoup4 + Selenium]
+    end
+
+    subgraph DataStore["Data Storage"]
+        D1[PostgreSQL<br>PostgreSQL 14+] --> D2[User Accounts<br>User Table]
+        D1 --> D3[Saved Scripts<br>Scripts Table]
+        D1 --> D4[Usage History<br>Metrics Table]
+        D5[Redis<br>Redis 6+] --> D6[Session Cache<br>Redis Collections]
+        D5 --> D7[Script Result Cache<br>Redis JSON]
+        D8[FAISS/Chroma<br>Vector DB] --> D9[Vector Embeddings<br>all-MiniLM-L6-v2]
+    end
+
+    subgraph Deployment["Deployment Infrastructure"]
+        E1[Docker Containers<br>Docker Compose] --> E2[App Container<br>Node 18 + Python 3.9]
+        E1 --> E3[AI Engine Container<br>CUDA + PyTorch]
+        E1 --> E4[Database Container<br>PostgreSQL + Redis]
+        E5[Cloud Provider<br>AWS / GCP] --> E6[Load Balancer<br>Nginx / Cloud LB]
+        E5 --> E7[Compute Resources<br>EC2 / Cloud Run]
+        E5 --> E8[Object Storage<br>S3 / Cloud Storage]
+        E5 --> E9[Monitoring/Logging<br>Prometheus + Grafana]
+    end
+
+    %% Connections between components
+    A3 --> B1
+    A4 --> B1
+    A5 --> B4
+    A7 --> B1
+    B2 <--> D2
+    B3 <--> C1
+    B4 --> B3
+    B5 <--> D1
+    B5 <--> D5
+    C1 <--> C2
+    C4 <--> D8
+    B3 <--> D7
+    E2 --> B1
+    E3 --> C1
+    E4 --> D1
+        </pre>
+    </div>
+    
+    <div class="diagram">
+        <h2>Component Architecture and Data Flow</h2>
+        <pre class="mermaid">
+graph LR
+    subgraph "User Request Flow"
+        U1[User] -->|"1. Describes workflow"| F1[Frontend]
+        F1 -->|"2. API request"| B1[Backend API]
+        B1 -->|"3. Process request"| LC[LangChain Orchestrator]
+        LC -->|"4. Generate prompt"| LM[Llama Model]
+        LC -->|"5. Retrieve similar examples"| VDB[Vector Database]
+        LC -->|"6. Access documentation"| DI[Documentation Index]
+        LM -->|"7. Generate code"| LC
+        LC -->|"8. Format response"| B1
+        B1 -->|"9. Return script"| F1
+        F1 -->|"10. Display script"| U1
+    end
+    
+    subgraph "Script Execution Flow"
+        U1 -->|"1. Run script"| F1
+        F1 -->|"2. Execution request"| B1
+        B1 -->|"3. Send to sandbox"| SB[Sandboxed Environment]
+        SB -->|"4. Execute with limits"| Tools[Tool Connectors]
+        Tools -->|"5. Access external services"| Ext[External APIs]
+        Tools -->|"6. Return results"| SB
+        SB -->|"7. Format output"| B1
+        B1 -->|"8. Return results"| F1
+        F1 -->|"9. Display results"| U1
+    end
+    
+    classDef frontend fill:#f9d5e5,stroke:#333,stroke-width:1px
+    classDef backend fill:#b5ead7,stroke:#333,stroke-width:1px
+    classDef ai fill:#c7ceea,stroke:#333,stroke-width:1px
+    classDef database fill:#e2f0cb,stroke:#333,stroke-width:1px
+    classDef tools fill:#ffdac1,stroke:#333,stroke-width:1px
+    
+    class U1,F1 frontend
+    class B1,SB backend
+    class LC,LM ai
+    class VDB,DI database
+    class Tools,Ext tools
+        </pre>
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            securityLevel: 'loose'
+        });
+    </script>
+</body>
+</html>
