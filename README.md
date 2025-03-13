@@ -2,6 +2,11 @@
 
 A powerful workflow automation system that uses AI to create and execute automated workflows through a Telegram bot interface. The system leverages LangChain and OpenAI to understand natural language commands and generate appropriate workflows.
 
+## 📚 Documentation
+
+- [View Architecture Documentation](architecture.html) - Interactive system architecture diagram and component breakdown
+- [View API Documentation](http://localhost:8000/docs) - Swagger UI documentation for the API endpoints (available when running the server)
+
 ## 🌟 Features
 
 - 🤖 Natural Language Workflow Creation
@@ -33,7 +38,7 @@ The system consists of three main components:
    - Natural language processing
    - Tool selection and orchestration
 
-For a detailed architecture diagram and component breakdown, see [architecture.html](architecture.html).
+For a detailed interactive architecture diagram and component breakdown, click here: [View Architecture Documentation](architecture.html)
 
 ## 🚀 Getting Started
 
@@ -145,8 +150,28 @@ workflow-automation/
 ├── docker-compose.yml
 ├── Dockerfile
 ├── requirements.txt
-└── README.md
+├── README.md
+└── architecture.html    # Interactive architecture documentation
 ```
+
+### Documentation
+
+The project includes two types of documentation:
+
+1. **Architecture Documentation** (`architecture.html`)
+   - Interactive system diagrams
+   - Component breakdown
+   - Data flow visualization
+   - Configuration details
+   - Security overview
+   - Monitoring setup
+
+2. **API Documentation**
+   - Available at `http://localhost:8000/docs` when running the server
+   - Swagger UI interface
+   - Interactive API testing
+   - Request/response examples
+   - Authentication details
 
 ### Adding New Features
 
