@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workflow Automation System Architecture</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --background-color: #f5f6fa;
+            --text-color: #2c3e50;
+            --border-color: #dcdde1;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--background-color);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        h2 {
+            color: var(--primary-color);
+            margin: 2rem 0 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        h3 {
+            color: var(--secondary-color);
+            margin: 1.5rem 0 1rem;
+        }
+
+        .section {
+            background: white;
+            border-radius: 8px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .code-block {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 4px;
+            margin: 1rem 0;
+            overflow-x: auto;
+        }
+
+        pre {
+            font-family: 'Courier New', Courier, monospace;
+            white-space: pre-wrap;
+        }
+
+        ul, ol {
+            margin-left: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        .mermaid {
+            background: white;
+            padding: 1rem;
+            border-radius: 4px;
+            margin: 1rem 0;
+            overflow-x: auto;
+        }
+
+        .nav-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 250px;
+            height: 100vh;
+            background: var(--primary-color);
+            padding: 2rem;
+            color: white;
+            overflow-y: auto;
+        }
+
+        .nav-menu ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .nav-menu li {
+            margin-bottom: 1rem;
+        }
+
+        .nav-menu a {
+            color: white;
+            text-decoration: none;
+            display: block;
+            padding: 0.5rem;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+
+        .nav-menu a:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .main-content {
+            margin-left: 250px;
+            padding: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .nav-menu {
+                display: none;
+            }
+            .main-content {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav-menu">
+        <h3>Contents</h3>
+        <ul>
+            <li><a href="#system-overview">System Overview</a></li>
+            <li><a href="#component-details">Component Details</a></li>
+            <li><a href="#data-flow">Data Flow</a></li>
+            <li><a href="#configuration">Configuration</a></li>
+            <li><a href="#security">Security</a></li>
+            <li><a href="#monitoring">Monitoring</a></li>
+        </ul>
+    </nav>
+
+    <header>
+        <div class="container">
+            <h1>Workflow Automation System Architecture</h1>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+            <section id="system-overview" class="section">
+                <h2>System Overview</h2>
+                <div class="mermaid">
+                    graph TB
+                        subgraph User["User Interface"]
+                            A1[Telegram Bot] --> A2[Backend API]
+                            A3[Web Interface] --> A2
+                        end
+
+                        subgraph Backend["Backend Services"]
+                            B1[FastAPI Server] --> B2[MongoDB]
+                            B1 --> B3[AI Service]
+                            B1 --> B4[Workflow Engine]
+                        end
+
+                        subgraph AI["AI Components"]
+                            C1[LangChain Orchestrator] --> C2[OpenAI API]
+                            C1 --> C3[Tool Library]
+                            C3 --> C4[Email Tools]
+                            C3 --> C5[File System Tools]
+                            C3 --> C6[Web Scraping Tools]
+                        end
+
+                        subgraph Data["Data Storage"]
+                            D1[MongoDB] --> D2[Workflows Collection]
+                            D1 --> D3[Users Collection]
+                            D1 --> D4[Execution History]
+                        end
+
+                        A1 --> B1
+                        A3 --> B1
+                        B1 --> C1
+                        B4 --> C1
+                </div>
+            </section>
+
+            <section id="component-details" class="section">
+                <h2>Component Details</h2>
+                
+                <h3>1. User Interface Layer</h3>
+                <h4>Telegram Bot (`telegram_bot/`)</h4>
+                <ul>
+                    <li><strong>Handlers:</strong>
+                        <ul>
+                            <li><code>command_handlers.py</code>: Handles bot commands (/start, /help, etc.)</li>
+                            <li><code>message_handlers.py</code>: Processes user messages</li>
+                            <li><code>callback_handlers.py</code>: Manages inline keyboard interactions</li>
+                        </ul>
+                    </li>
+                    <li><strong>Utils:</strong>
+                        <ul>
+                            <li><code>api_client.py</code>: Communicates with backend API</li>
+                        </ul>
+                    </li>
+                    <li><strong>Config:</strong>
+                        <ul>
+                            <li><code>config.py</code>: Bot configuration and settings</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <h3>2. Backend Layer (`backend/`)</h3>
+                <h4>FastAPI Server</h4>
+                <ul>
+                    <li><strong>Routes:</strong>
+                        <ul>
+                            <li><code>/api/workflows</code>: Workflow CRUD operations</li>
+                            <li><code>/api/users</code>: User management</li>
+                            <li><code>/api/execute</code>: Workflow execution</li>
+                        </ul>
+                    </li>
+                    <li><strong>Services:</strong>
+                        <ul>
+                            <li><code>workflow_service.py</code>: Workflow business logic</li>
+                            <li><code>ai_service.py</code>: AI integration</li>
+                            <li><code>auth_service.py</code>: Authentication/Authorization</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <h3>3. AI Layer</h3>
+                <h4>LangChain Integration</h4>
+                <ul>
+                    <li><strong>Components:</strong>
+                        <ul>
+                            <li>Workflow Generation</li>
+                            <li>Natural Language Processing</li>
+                            <li>Tool Selection</li>
+                        </ul>
+                    </li>
+                    <li><strong>Tools:</strong>
+                        <ul>
+                            <li>Email Operations</li>
+                            <li>File System Operations</li>
+                            <li>Web Scraping</li>
+                            <li>API Integrations</li>
+                        </ul>
+                    </li>
+                </ul>
+            </section>
+
+            <section id="data-flow" class="section">
+                <h2>Data Flow</h2>
+                
+                <h3>1. Workflow Creation</h3>
+                <div class="mermaid">
+                    sequenceDiagram
+                        participant User
+                        participant Bot
+                        participant API
+                        participant AI
+                        participant DB
+
+                        User->>Bot: /create command
+                        Bot->>API: Create workflow request
+                        API->>AI: Generate workflow
+                        AI->>API: Workflow definition
+                        API->>DB: Store workflow
+                        DB-->>API: Confirmation
+                        API-->>Bot: Success response
+                        Bot-->>User: Workflow created
+                </div>
+
+                <h3>2. Workflow Execution</h3>
+                <div class="mermaid">
+                    sequenceDiagram
+                        participant User
+                        participant Bot
+                        participant API
+                        participant Engine
+                        participant Tools
+                        participant DB
+
+                        User->>Bot: Execute workflow
+                        Bot->>API: Execution request
+                        API->>Engine: Start workflow
+                        Engine->>Tools: Execute steps
+                        Tools-->>Engine: Results
+                        Engine->>DB: Log execution
+                        DB-->>API: Confirmation
+                        API-->>Bot: Results
+                        Bot-->>User: Execution complete
+                </div>
+            </section>
+
+            <section id="configuration" class="section">
+                <h2>Configuration</h2>
+                
+                <h3>Environment Variables</h3>
+                <div class="code-block">
+                    <pre># API Configuration
+API_HOST=0.0.0.0
+API_PORT=8000
+
+# MongoDB Configuration
+MONGODB_URI=mongodb://mongodb:27017
+MONGODB_DB_NAME=workflow_automation
+
+# Telegram Bot Configuration
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
+
+# AI Service Configuration
+OPENAI_API_KEY=your_openai_api_key_here
+
+# JWT Configuration
+SECRET_KEY=your-secret-key-for-jwt
+
+# Debug Mode
+DEBUG=true</pre>
+                </div>
+
+                <h3>Docker Services</h3>
+                <div class="code-block">
+                    <pre>services:
+  mongodb:
+    - Database service
+    - Persistent storage
+    - Health checks
+
+  backend:
+    - FastAPI application
+    - API endpoints
+    - Business logic
+
+  telegram-bot:
+    - Bot service
+    - User interaction
+    - API communication</pre>
+                </div>
+            </section>
+
+            <section id="security" class="section">
+                <h2>Security</h2>
+                
+                <h3>1. Authentication</h3>
+                <ul>
+                    <li>JWT-based authentication</li>
+                    <li>Token validation</li>
+                    <li>User sessions</li>
+                </ul>
+
+                <h3>2. Authorization</h3>
+                <ul>
+                    <li>Role-based access control</li>
+                    <li>Workflow permissions</li>
+                    <li>API endpoint protection</li>
+                </ul>
+
+                <h3>3. Data Protection</h3>
+                <ul>
+                    <li>Environment variable encryption</li>
+                    <li>Secure API communication</li>
+                    <li>Input validation</li>
+                </ul>
+            </section>
+
+            <section id="monitoring" class="section">
+                <h2>Monitoring and Logging</h2>
+                
+                <h3>1. Application Logs</h3>
+                <ul>
+                    <li>Bot interactions</li>
+                    <li>API requests</li>
+                    <li>Workflow execution</li>
+                </ul>
+
+                <h3>2. System Metrics</h3>
+                <ul>
+                    <li>Service health</li>
+                    <li>Performance metrics</li>
+                    <li>Error rates</li>
+                </ul>
+
+                <h3>3. Alerts</h3>
+                <ul>
+                    <li>Service failures</li>
+                    <li>Error thresholds</li>
+                    <li>Performance issues</li>
+                </ul>
+            </section>
+        </div>
+    </main>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            securityLevel: 'loose',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis'
+            }
+        });
+    </script>
+</body>
+</html> 
