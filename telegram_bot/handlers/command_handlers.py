@@ -2,7 +2,8 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from ..utils.api_client import get_user_workflows, create_workflow
-from ..config import logger, WORKFLOW_TYPES
+from ..constants import WORKFLOW_TYPES
+from ..config import logger
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle the /start command."""

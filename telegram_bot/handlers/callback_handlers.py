@@ -8,7 +8,8 @@ from ..utils.api_client import (
     delete_workflow,
     get_workflow
 )
-from ..config import WORKFLOW_TYPES, logger
+from ..constants import WORKFLOW_TYPES
+from ..config import logger
 import json
 
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
