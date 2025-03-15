@@ -9,3 +9,5 @@ python-dotenv==1.0.1
 python-telegram-bot==21.11.1
 Requests==2.32.3
 uvicorn==0.34.0
+google-generativeai>=0.3.0
+PyJWT==2.8.0

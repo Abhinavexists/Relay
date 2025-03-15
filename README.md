@@ -85,6 +85,9 @@ For a detailed interactive architecture diagram and component breakdown, click h
    DEBUG=true
    ```
 
+3. Get your Gemini API key from Google AI Studio (https://makersuite.google.com/)
+4. Add your Gemini API key to the `.env` file
+
 ### Running with Docker
 
 1. Build and start the services:
