@@ -1,6 +1,7 @@
 import logging
 from pydantic_settings import BaseSettings
 from functools import lru_cache
+from typing import Optional
 
 # Configure logging
 logging.basicConfig(
@@ -11,22 +12,30 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class Settings(BaseSettings):
-    # MongoDB Configuration
-    MONGODB_URI: str
-    MONGODB_DB_NAME: str = "workflow_automation"
-    
-    # Telegram Bot Configuration
-    TELEGRAM_BOT_TOKEN: str
-    
+    model_config = {
+        "env_file": ".env",
+        "case_sensitive": True,
+        "populate_by_name": True,
+        "extra": "allow",  # Allow extra fields
+        "env_file_encoding": "utf-8"
+    }
+
     # API Configuration
-    API_HOST: str = "localhost"
+    API_HOST: str = "0.0.0.0"
     API_PORT: int = 8000
+    MONGODB_URI: str = "mongodb://localhost:27017"
+    MONGODB_DB_NAME: str = "workflow_automation"
+    TELEGRAM_BOT_TOKEN: Optional[str] = None
+    DEBUG: bool = True
     
-    class Config:
-        env_file = ".env"
+    # Auth Configuration
+    GEMINI_API_KEY: str
+    JWT_SECRET_KEY: str
+    JWT_ALGORITHM: str = "HS256"
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
 @lru_cache()
-def get_settings() -> Settings:
+def get_settings():
     return Settings()
 
 settings = get_settings()
