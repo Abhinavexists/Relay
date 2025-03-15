@@ -13,10 +13,31 @@ from ..services.workflow_service import (
     get_workflow_executions
 )
 from ..services.ai_service import generate_workflow_from_description
-from ..api.user import get_current_user
+from .user import get_current_user
 from ..models.user import UserModel
+import google.generativeai as genai
+from google.generativeai.types import GenerateContentResponse
+import os
+import logging
 
 router = APIRouter()
+
+class AIProvider:
+    def __init__(self):
+        gemini_api_key = os.getenv("GEMINI_API_KEY")
+        if not gemini_api_key:
+            raise ValueError("GEMINI_API_KEY environment variable is not set")
+        
+        genai.configure(api_key=gemini_api_key)
+        self.model = genai.GenerativeModel('gemini-pro')
+
+    async def get_completion(self, prompt: str) -> str:
+        try:
+            response = await self.model.generate_content_async(prompt)
+            return response.text
+        except Exception as e:
+            logging.error(f"Error getting completion from Gemini: {str(e)}")
+            raise
 
 @router.post("/", response_model=WorkflowModel, status_code=status.HTTP_201_CREATED)
 async def create_workflow(

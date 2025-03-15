@@ -6,7 +6,7 @@ import uvicorn
 import os
 
 from .config import settings
-from .api import workflows, users
+from .api import user, workflows
 from .database.mongodb import init_db, close_db
 
 app = FastAPI(
@@ -26,7 +26,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(workflows.router, prefix="/api/workflows", tags=["workflows"])
-app.include_router(users.router, prefix="/api/users", tags=["users"])
+app.include_router(user.router, prefix="/api/users", tags=["users"])
 
 @app.on_event("startup")
 async def startup_event():

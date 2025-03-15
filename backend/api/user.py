@@ -13,7 +13,7 @@ from ..services.workflow_service import (
     get_workflow_executions
 )
 from ..services.ai_service import generate_workflow_from_description
-from ..api.user import get_current_user
+from .user import get_current_user
 from ..models.user import UserModel
 
 router = APIRouter()

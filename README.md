@@ -58,32 +58,9 @@ For a detailed interactive architecture diagram and component breakdown, click h
    cd workflow-automation
    ```
 
-2. Create and configure environment variables:
-   ```bash
-   cp env-example.txt .env
-   ```
-   Edit `.env` with your configuration:
-   ```bash
-   # API Configuration
-   API_HOST=0.0.0.0
-   API_PORT=8000
-
-   # MongoDB Configuration
-   MONGODB_URI=mongodb://mongodb:27017
-   MONGODB_DB_NAME=workflow_automation
-
-   # Telegram Bot Configuration
-   TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
-
-   # AI Service Configuration
-   OPENAI_API_KEY=your_openai_api_key_here
-
-   # JWT Configuration
-   SECRET_KEY=your-secret-key-for-jwt
-
-   # Debug Mode
-   DEBUG=true
-   ```
+2. Copy `.env.example` to `.env`
+3. Get your Gemini API key from Google AI Studio (https://makersuite.google.com/)
+4. Add your Gemini API key to the `.env` file
 
 ### Running with Docker
 
