@@ -1,6 +1,6 @@
 # Relay - Workflow Automation System
 
-A sophisticated workflow automation platform that leverages artificial intelligence to create and execute automated workflows through a Telegram bot interface. The system integrates LangChain and OpenAI technologies to process natural language commands and generate appropriate workflows, enabling users to automate complex tasks with simple conversational interactions.
+A sophisticated workflow automation platform that leverages artificial intelligence to create and execute automated workflows through a Telegram bot interface. The system currently uses Google's Gemini API for natural language processing, with plans to integrate LangChain and OpenAI technologies in the future to enhance workflow generation and tool orchestration capabilities.
 
 ## Table of Contents
 - [Documentation](#-documentation)
@@ -103,16 +103,17 @@ The system implements a microservices architecture with three primary components
   - State management
 
 ### 3. AI Service
-- **LangChain Integration**
+- **Current Implementation**
+  - Google Gemini API Integration
+    - Text processing
+    - Command interpretation
+    - Response generation
+
+- **Planned Future Implementation with LangChain**
   - Natural language understanding
   - Workflow generation
   - Context management
-  - Tool selection
-
-- **OpenAI/Gemini Integration**
-  - Text processing
-  - Command interpretation
-  - Response generation
+  - Tool selection and orchestration
 
 ## 🚀 Getting Started
 
@@ -369,8 +370,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ### Technologies
 - [FastAPI](https://fastapi.tiangolo.com/) - Modern web framework
-- [LangChain](https://www.langchain.com/) - AI orchestration
-- [OpenAI](https://openai.com/) - AI capabilities
+- [Google Gemini](https://ai.google.dev/) - Current AI provider
+- [LangChain](https://www.langchain.com/) - Planned future AI orchestration
+- [OpenAI](https://openai.com/) - Planned future AI capabilities
 - [python-telegram-bot](https://python-telegram-bot.org/) - Telegram integration
 - [MongoDB](https://www.mongodb.com/) - Database system
 
