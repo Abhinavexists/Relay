@@ -389,6 +389,27 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Contact the maintainers
 - Join our community channels
 
+## Primary Contributors
+
+<table>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/Abhinavexists">
+        <img src="https://github.com/Abhinavexists.png" width="100px;" alt="Abhinavexists"/>
+        <br />
+        <sub><b>Abhinavexists</b></sub>
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://github.com/ishi-ta-lal">
+        <img src="https://github.com/ishi-ta-lal.png" width="100px;" alt="ishi-ta-lal"/>
+        <br />
+        <sub><b>ishi-ta-lal</b></sub>
+      </a>
+    </td>
+  </tr>
+</table>
+
 ### Reporting Issues
 - Use the issue template
 - Provide reproduction steps
