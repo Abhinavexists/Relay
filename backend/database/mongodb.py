@@ -1,5 +1,5 @@
 from motor.motor_asyncio import AsyncIOMotorClient
-from ..config import settings
+from ..core.config import settings
 import logging
 
 logger = logging.getLogger(__name__)
@@ -12,7 +12,7 @@ db = Database()
 
 async def init_db():
     logger.info("Connecting to MongoDB...")
-    db.client = AsyncIOMotorClient(settings.MONGODB_URL)
+    db.client = AsyncIOMotorClient(settings.MONGODB_URI)
     db.db = db.client[settings.MONGODB_DB_NAME]
     logger.info("Connected to MongoDB.")
     
