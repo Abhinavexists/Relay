@@ -2,12 +2,11 @@ fastapi==0.115.11
 httpx==0.28.1
 jmespath==1.0.1
 motor==3.3.1
-openai==1.66.3
 pydantic==2.10.6
 pydantic_settings==2.8.1
 python-dotenv==1.0.1
 python-telegram-bot==21.11.1
 Requests==2.32.3
 uvicorn==0.34.0
-google-generativeai>=0.3.0
+google-genai
 PyJWT==2.8.0
