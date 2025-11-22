@@ -2,14 +2,14 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime
 import uuid
 import logging
-import openai
-from ..config import settings
+from google import genai
+from ..core.config import settings
 from ..models.workflow import WorkflowModel, WorkflowTrigger, WorkflowTriggerType, WorkflowAction, WorkflowCondition, WorkflowEdge, WorkflowStatus
 
 logger = logging.getLogger(__name__)
 
-# Initialize OpenAI
-openai.api_key = settings.OPENAI_API_KEY
+# Initialize Gemini Client
+client = genai.Client(api_key=settings.GEMINI_API_KEY)
 
 async def generate_workflow_from_description(description: str, user_id: str) -> WorkflowModel:
     """
@@ -20,31 +20,49 @@ async def generate_workflow_from_description(description: str, user_id: str) -> 
         # In a production system, you'd want to use a more sophisticated approach
         
         prompt = f"""
-        Create a workflow based on this description:
+        Based on the following description, design a workflow:
         "{description}"
         
-        The workflow should include:
-        1. A trigger (manual, scheduled, webhook, or event)
-        2. A series of actions with their configurations
-        3. Any conditions for branching logic
-        4. How the actions are connected
+        **IMPORTANT INSTRUCTIONS**:
+        1. Extract any text, data, or content mentioned in the description
+        2. If the user provides text to process (e.g., "Summarize this text: ..."), extract that text and put it in the action's config
+        3. Use ONLY these action types:
+           - "summarize" - for text summarization tasks
+           - "extract" - for extracting information from text
+           - "classify" - for classification tasks  
+           - "generate" - for content generation
+           - "http_request" - for making HTTP API calls (use real, working APIs only)
+           - "send_email" - for sending emails
+           - "data_transformation" - for transforming data
+        
+        4. For AI tasks (summarize, extract, classify, generate), the config MUST include:
+           - "text": the actual text to process (extract this from the user's description)
+           - "task_type": the type of task (optional, will be inferred from action type)
+        
+        5. For http_request, use ONLY real, working public APIs like:
+           - https://official-joke-api.appspot.com/random_joke
+           - https://api.github.com/users/github
+           - https://jsonplaceholder.typicode.com/posts/1
         
         Return the result as a JSON object with the following structure:
         {{
             "name": "Workflow name",
             "description": "Workflow description",
             "trigger": {{
-                "type": "manual|scheduled|webhook|event",
-                "config": {{
-                    // Trigger-specific configuration
-                }}
+                "type": "manual",
+                "config": {{}}
             }},
             "actions": [
                 {{
                     "name": "Action name",
-                    "type": "action_type",
+                    "type": "summarize|extract|classify|generate|http_request|send_email|data_transformation",
                     "config": {{
-                        // Action-specific configuration
+                        "text": "THE ACTUAL TEXT FROM USER'S DESCRIPTION (for AI tasks)",
+                        "url": "REAL WORKING API URL (for http_request)",
+                        "method": "GET or POST (for http_request)",
+                        "to": "recipient (for send_email)",
+                        "subject": "email subject (for send_email)",
+                        "body": "email body (for send_email)"
                     }},
                     "position": {{ "x": 100, "y": 100 }}
                 }}
@@ -67,18 +85,15 @@ async def generate_workflow_from_description(description: str, user_id: str) -> 
         }}
         """
         
-        response = await openai.ChatCompletion.acreate(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are a workflow automation assistant. Your task is to design workflows based on natural language descriptions."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.7,
-            max_tokens=1000
+        full_prompt = f"You are a workflow automation assistant. Your task is to design workflows based on natural language descriptions.\n\n{prompt}"
+        
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=full_prompt
         )
         
         # Parse the AI response
-        ai_response = response.choices[0].message.content
+        ai_response = response.text
         
         # Extract JSON from the response
         import json

@@ -134,18 +134,18 @@ class ToolService:
     
     async def execute_ai_task(self, config: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Execute an AI task using OpenAI
+        Execute an AI task using Gemini
         
-        Config parameters:
+        Config:
         - task_type: summarize, extract, classify, generate
         - input: input variable name
         - prompt: additional prompt instructions
         - output: output variable name
         """
-        import openai
-        from ..config import settings
+        from google import genai
+        from ..core.config import settings
         
-        openai.api_key = settings.OPENAI_API_KEY
+        client = genai.Client(api_key=settings.GEMINI_API_KEY)
         task_type = config.get("task_type", "generate")
         input_var = config.get("input")
         prompt = config.get("prompt", "")
@@ -166,17 +166,14 @@ class ToolService:
             else:  # generate
                 system_message = "Generate text based on the following instructions:"
             
-            response = await openai.ChatCompletion.acreate(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": system_message},
-                    {"role": "user", "content": f"{prompt}\n\n{input_text}"}
-                ],
-                temperature=0.7,
-                max_tokens=500
+            full_prompt = f"{system_message}\n\n{prompt}\n\n{input_text}"
+            
+            response = client.models.generate_content(
+                model='gemini-2.0-flash',
+                contents=full_prompt
             )
             
-            result = response.choices[0].message.content
+            result = response.text
             
             return {output_var: result}
         except Exception as e:
