@@ -14,6 +14,7 @@ from datetime import datetime
 import logging
 from typing import List, Dict, Any, Optional
 import uuid
+from .tool_service import tool_service
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +84,7 @@ async def execute_workflow(workflow_id: str, input_data: Dict[str, Any]) -> Work
     
     try:
         # Process workflow nodes
-        output_data = await process_workflow(workflow, input_data)
+        output_data = await process_workflow(workflow, input_data, execution)
         
         # Update execution record
         execution.status = "completed"
@@ -102,65 +103,83 @@ async def execute_workflow(workflow_id: str, input_data: Dict[str, Any]) -> Work
     
     return execution
 
-async def process_workflow(workflow: WorkflowModel, input_data: Dict[str, Any]) -> Dict[str, Any]:
+async def process_workflow(workflow: WorkflowModel, input_data: Dict[str, Any], execution: WorkflowExecution) -> Dict[str, Any]:
     """
-    Process a workflow by executing its actions in order
+    Process a workflow by executing its actions in topological order
     """
-    # In a real implementation, this would navigate the workflow graph
-    # For the hackathon, we'll implement a simplified version
-    
     context = {**input_data}  # Start with input data
     
-    # Find the first action (no incoming edges)
+    # Build graph
+    adj_list = {}
+    in_degree = {}
     action_map = {action.id: action for action in workflow.actions}
-    condition_map = {condition.id: condition for condition in workflow.conditions}
     
-    # Create a map of incoming edges
-    incoming_edges = {}
+    # Initialize in-degree for all actions
+    for action in workflow.actions:
+        in_degree[action.id] = 0
+        adj_list[action.id] = []
+        
+    # Build adjacency list and calculate in-degrees
     for edge in workflow.edges:
-        if edge.target not in incoming_edges:
-            incoming_edges[edge.target] = []
-        incoming_edges[edge.target].append(edge.source)
+        if edge.source in action_map and edge.target in action_map:
+            adj_list[edge.source].append(edge.target)
+            in_degree[edge.target] += 1
+            
+    # Find start nodes (in-degree 0)
+    queue = [action_id for action_id, degree in in_degree.items() if degree == 0]
     
-    # Find nodes with no incoming edges (start nodes)
-    start_nodes = []
-    for action in workflow.actions:
-        if action.id not in incoming_edges:
-            start_nodes.append(action.id)
+    execution_order = []
     
-    # Simple execution for hackathon - just execute actions in sequence
-    for action in workflow.actions:
-        action_result = await execute_action(action.type, action.config, context)
-        context.update(action_result)
-    
+    while queue:
+        current_id = queue.pop(0)
+        execution_order.append(current_id)
+        
+        for neighbor in adj_list[current_id]:
+            in_degree[neighbor] -= 1
+            if in_degree[neighbor] == 0:
+                queue.append(neighbor)
+                
+    if len(execution_order) != len(workflow.actions):
+        raise ValueError("Cycle detected in workflow graph")
+        
+    # Execute actions in order
+    for action_id in execution_order:
+        action = action_map[action_id]
+        execution.logs.append({"timestamp": datetime.now().isoformat(), "message": f"Executing action: {action.name} ({action.type})"})
+        
+        try:
+            action_result = await execute_action(action.type, action.config, context)
+            context.update(action_result)
+            execution.logs.append({"timestamp": datetime.now().isoformat(), "message": f"Action {action.name} completed"})
+        except Exception as e:
+            execution.logs.append({"timestamp": datetime.now().isoformat(), "message": f"Action {action.name} failed: {str(e)}"})
+            raise e
+            
     return context
 
 async def execute_action(action_type: str, config: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Execute a single action based on its type
+    Execute a single action based on its type using ToolService
     """
-    # This is where you'd implement different action types
-    # For the hackathon, we'll simulate a few basic actions
+    if action_type == "http_request":
+        return await tool_service.execute_http_request(config, context)
     
-    if action_type == "extract_text":
-        # Simulate text extraction
-        return {"extracted_text": "Sample extracted text"}
-    
-    elif action_type == "classify_document":
-        # Simulate document classification
-        return {"document_type": "invoice", "confidence": 0.95}
+    elif action_type == "data_transformation":
+        return await tool_service.execute_data_transformation(config, context)
     
     elif action_type == "send_email":
-        # Simulate sending email
-        return {"email_sent": True, "timestamp": datetime.now().isoformat()}
+        return await tool_service.send_email(config, context)
     
-    elif action_type == "http_request":
-        # Simulate HTTP request
-        return {"response": {"status": 200, "body": "Success"}}
+    elif action_type in ["summarize", "extract", "classify", "generate", "ai_task"]:
+        # Map generic ai_task or specific types to execute_ai_task
+        if action_type != "ai_task":
+            config["task_type"] = action_type
+        return await tool_service.execute_ai_task(config, context)
     
     else:
-        # Unknown action type
-        raise ValueError(f"Unknown action type: {action_type}")
+        # Fallback for unknown types or simulation
+        logger.warning(f"Unknown action type: {action_type}, returning empty result")
+        return {}
 
 async def get_workflow_execution(execution_id: str) -> Optional[WorkflowExecution]:
     """
