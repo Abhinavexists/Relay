@@ -7,131 +7,165 @@ logger = logging.getLogger(__name__)
 
 class APIClient:
     def __init__(self):
-        self.base_url = f"http://{settings.API_HOST}:{settings.API_PORT}"
+        self.base_url = f"http://{settings.API_HOST}:{settings.API_PORT}/api"
         self.client = httpx.AsyncClient(timeout=30.0)
+        self.tokens: Dict[str, str] = {}  # user_id -> token mapping
 
     async def close(self):
         await self.client.aclose()
 
-    async def get_user_workflows(self, user_id: str) -> List[Dict[str, Any]]:
-        """Get all workflows for a user."""
-        response = await self.client.get(f"{self.base_url}/api/workflows", params={"user_id": user_id})
-        response.raise_for_status()
-        return response.json()
-
-    async def create_workflow(self, user_id: str, workflow_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Create a new workflow for a user."""
-        response = await self.client.post(
-            f"{self.base_url}/api/workflows",
-            json={"user_id": user_id, **workflow_data}
-        )
-        response.raise_for_status()
-        return response.json()
-
-    async def get_workflow(self, workflow_id: str) -> Dict[str, Any]:
-        """Get a specific workflow by ID."""
-        response = await self.client.get(f"{self.base_url}/api/workflows/{workflow_id}")
-        response.raise_for_status()
-        return response.json()
-
-    async def execute_workflow(self, workflow_id: str) -> Dict[str, Any]:
-        """Execute a workflow."""
-        response = await self.client.post(f"{self.base_url}/api/workflows/{workflow_id}/execute")
-        response.raise_for_status()
-        return response.json()
-
-    async def delete_workflow(self, workflow_id: str) -> None:
-        """Delete a workflow."""
-        response = await self.client.delete(f"{self.base_url}/api/workflows/{workflow_id}")
-        response.raise_for_status()
-
-    async def get_workflow_details(self, workflow_id: str) -> Dict[str, Any]:
-        """
-        Get detailed information about a specific workflow.
-        
-        Args:
-            workflow_id (str): The ID of the workflow to get details for
-            
-        Returns:
-            Dict[str, Any]: Detailed workflow information
-        """
+    async def register_user(self, telegram_id: str, email: str, password: str, full_name: str) -> Dict[str, Any]:
+        """Register a new user."""
         try:
-            # For now, return mock data
-            return {
-                "id": workflow_id,
-                "name": "Sample Workflow",
-                "type": "email",
-                "status": "active",
-                "created_at": "2024-03-15T10:00:00Z",
-                "last_executed": "2024-03-15T12:00:00Z",
-                "execution_count": 5,
-                "description": "This workflow handles email automation",
-                "triggers": ["schedule", "manual"],
-                "actions": ["send_email", "notify"],
-                "settings": {
-                    "schedule": "daily",
-                    "recipients": ["user@example.com"]
+            response = await self.client.post(
+                f"{self.base_url}/users/register",
+                json={
+                    "email": email,
+                    "password": password,
+                    "full_name": full_name
                 }
-            }
+            )
+            response.raise_for_status()
+            return response.json()
         except Exception as e:
-            logger.error(f"Error getting workflow details: {e}")
+            logger.error(f"Error registering user: {e}")
+            raise
+
+    async def login_user(self, telegram_id: str, email: str, password: str) -> str:
+        """Login user and store token."""
+        try:
+            response = await self.client.post(
+                f"{self.base_url}/users/login",
+                data={
+                    "username": email,
+                    "password": password
+                }
+            )
+            response.raise_for_status()
+            token_data = response.json()
+            token = token_data["access_token"]
+            self.tokens[telegram_id] = token
+            return token
+        except Exception as e:
+            logger.error(f"Error logging in user: {e}")
+            raise
+
+    def _get_headers(self, telegram_id: str) -> Dict[str, str]:
+        """Get authorization headers for a user."""
+        token = self.tokens.get(telegram_id)
+        if not token:
+            raise ValueError("User not authenticated. Please login first.")
+        return {"Authorization": f"Bearer {token}"}
+
+    async def get_user_workflows(self, telegram_id: str) -> List[Dict[str, Any]]:
+        """Get all workflows for a user."""
+        try:
+            headers = self._get_headers(telegram_id)
+            response = await self.client.get(
+                f"{self.base_url}/workflows",
+                headers=headers
+            )
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            logger.error(f"Error getting workflows: {e}")
+            raise
+
+    async def generate_workflow(self, telegram_id: str, description: str) -> Dict[str, Any]:
+        """Generate a workflow from natural language description."""
+        try:
+            headers = self._get_headers(telegram_id)
+            response = await self.client.post(
+                f"{self.base_url}/workflows/generate",
+                headers=headers,
+                json={"description": description}
+            )
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            logger.error(f"Error generating workflow: {e}")
+            raise
+
+    async def get_workflow(self, telegram_id: str, workflow_id: str) -> Dict[str, Any]:
+        """Get a specific workflow by ID."""
+        try:
+            headers = self._get_headers(telegram_id)
+            response = await self.client.get(
+                f"{self.base_url}/workflows/{workflow_id}",
+                headers=headers
+            )
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            logger.error(f"Error getting workflow: {e}")
+            raise
+
+    async def execute_workflow(self, telegram_id: str, workflow_id: str, input_data: Optional[Dict] = None) -> Dict[str, Any]:
+        """Execute a workflow."""
+        try:
+            headers = self._get_headers(telegram_id)
+            response = await self.client.post(
+                f"{self.base_url}/execute/{workflow_id}",
+                headers=headers,
+                json=input_data or {}
+            )
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            logger.error(f"Error executing workflow: {e}")
+            raise
+
+    async def get_execution_status(self, telegram_id: str, execution_id: str) -> Dict[str, Any]:
+        """Get execution status."""
+        try:
+            headers = self._get_headers(telegram_id)
+            response = await self.client.get(
+                f"{self.base_url}/execute/{execution_id}",
+                headers=headers
+            )
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            logger.error(f"Error getting execution status: {e}")
+            raise
+
+    async def delete_workflow(self, telegram_id: str, workflow_id: str) -> None:
+        """Delete a workflow."""
+        try:
+            headers = self._get_headers(telegram_id)
+            response = await self.client.delete(
+                f"{self.base_url}/workflows/{workflow_id}",
+                headers=headers
+            )
+            response.raise_for_status()
+        except Exception as e:
+            logger.error(f"Error deleting workflow: {e}")
             raise
 
 # Create a singleton instance
 api_client = APIClient()
 
 # Export functions for easy access
-async def get_user_workflows(user_id: str) -> List[Dict[str, Any]]:
-    return await api_client.get_user_workflows(user_id)
+async def register_user(telegram_id: str, email: str, password: str, full_name: str) -> Dict[str, Any]:
+    return await api_client.register_user(telegram_id, email, password, full_name)
 
-async def create_workflow(user_id: str, workflow_data: Dict[str, Any]) -> Dict[str, Any]:
-    return await api_client.create_workflow(user_id, workflow_data)
+async def login_user(telegram_id: str, email: str, password: str) -> str:
+    return await api_client.login_user(telegram_id, email, password)
 
-async def get_workflow(workflow_id: str) -> Dict[str, Any]:
-    return await api_client.get_workflow(workflow_id)
+async def get_user_workflows(telegram_id: str) -> List[Dict[str, Any]]:
+    return await api_client.get_user_workflows(telegram_id)
 
-async def get_workflow_details(workflow_id: str) -> Dict[str, Any]:
-    return await api_client.get_workflow_details(workflow_id)
+async def generate_workflow(telegram_id: str, description: str) -> Dict[str, Any]:
+    return await api_client.generate_workflow(telegram_id, description)
 
-async def execute_workflow(workflow_id: str) -> Dict[str, Any]:
-    return await api_client.execute_workflow(workflow_id)
+async def get_workflow(telegram_id: str, workflow_id: str) -> Dict[str, Any]:
+    return await api_client.get_workflow(telegram_id, workflow_id)
 
-async def delete_workflow(workflow_id: str) -> None:
-    await api_client.delete_workflow(workflow_id)
+async def execute_workflow(telegram_id: str, workflow_id: str, input_data: Optional[Dict] = None) -> Dict[str, Any]:
+    return await api_client.execute_workflow(telegram_id, workflow_id, input_data)
 
-async def analyze_user_request(user_id: str, message: str) -> Dict[str, Any]:
-    """
-    Analyze user message and determine appropriate workflow action.
-    
-    Args:
-        user_id (str): The ID of the user making the request
-        message (str): The message content to analyze
-        
-    Returns:
-        Dict[str, Any]: Analysis results including intent and extracted parameters
-    """
-    try:
-        # TODO: Implement actual API call to your backend
-        # For now, return a mock response
-        return {
-            "intent": "create_workflow",
-            "confidence": 0.9,
-            "parameters": {
-                "workflow_type": "email",
-                "trigger": "schedule",
-                "action": "send_email"
-            },
-            "message": "I understand you want to create an email workflow."
-        }
-    except Exception as e:
-        logger.error(f"Error analyzing user request: {e}")
-        return {
-            "intent": "unknown",
-            "confidence": 0,
-            "error": str(e)
-        }
+async def get_execution_status(telegram_id: str, execution_id: str) -> Dict[str, Any]:
+    return await api_client.get_execution_status(telegram_id, execution_id)
 
-async def execute_workflow(workflow_id: str, input_data: Optional[Dict] = None) -> Dict:
-    """Execute a specific workflow."""
-    # TODO: Implement actual API call
-    return {"status": "success", "message": "Workflow executed successfully"}
+async def delete_workflow(telegram_id: str, workflow_id: str) -> None:
+    await api_client.delete_workflow(telegram_id, workflow_id)

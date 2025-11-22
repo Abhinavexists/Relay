@@ -1,22 +1,60 @@
 # telegram_bot/handlers/message_handlers.py
-from telegram import Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
-from ..utils.api_client import analyze_user_request
+from ..utils.api_client import generate_workflow
 from ..config import logger
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle incoming text messages."""
     message = update.message.text
     user = update.effective_user
+    telegram_id = str(user.id)
     
     # Log the message
     logger.info(f"Message from {user.first_name}: {message}")
     
-    # TODO: Implement natural language processing for workflow creation
-    await update.message.reply_text(
-        "🤖 I understand you want to create a workflow.\n"
-        "For now, please use the /create command to start the workflow creation process."
-    )
+    try:
+        # Show processing message
+        processing_msg = await update.message.reply_text("🤖 Analyzing your request and creating a workflow...")
+        
+        # Generate workflow from natural language
+        workflow = await generate_workflow(telegram_id, message)
+        
+        # Delete processing message
+        await processing_msg.delete()
+        
+        # Show generated workflow
+        workflow_text = (
+            f"✅ I've created a workflow for you!\n\n"
+            f"📋 *{workflow['name']}*\n"
+            f"📝 {workflow['description']}\n\n"
+            f"Status: {workflow['status']}\n"
+            f"Actions: {len(workflow.get('actions', []))} steps"
+        )
+        
+        # Create action buttons
+        keyboard = [
+            [
+                InlineKeyboardButton("▶️ Execute Now", callback_data=f"execute_{workflow['id']}"),
+                InlineKeyboardButton("📊 View Details", callback_data=f"workflow_{workflow['id']}")
+            ],
+            [InlineKeyboardButton("🗑️ Delete", callback_data=f"delete_{workflow['id']}")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await update.message.reply_markdown(workflow_text, reply_markup=reply_markup)
+        
+    except ValueError as e:
+        await update.message.reply_text(
+            "🔑 Please use /start first to register and login!"
+        )
+    except Exception as e:
+        logger.error(f"Error generating workflow: {e}")
+        await update.message.reply_text(
+            "❌ Sorry, I couldn't create a workflow from that.\n"
+            "Please try describing it differently or use /create for guided creation."
+        )
+
 
 async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle plain text messages from users."""

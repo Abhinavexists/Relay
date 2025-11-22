@@ -2,11 +2,10 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from ..utils.api_client import (
-    get_workflow_details,
-    create_workflow,
+    get_workflow,
     execute_workflow,
     delete_workflow,
-    get_workflow
+    get_execution_status
 )
 from ..constants import WORKFLOW_TYPES
 from ..config import logger
@@ -92,29 +91,24 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 async def show_workflow_details(update: Update, context: ContextTypes.DEFAULT_TYPE, workflow_id: str) -> None:
     """Show detailed information about a specific workflow."""
     query = update.callback_query
+    telegram_id = str(update.effective_user.id)
     
     try:
-        workflow = await get_workflow(workflow_id)
+        workflow = await get_workflow(telegram_id, workflow_id)
         
         details_text = (
             f"*{workflow['name']}*\n\n"
-            f"*Type:* {workflow['type']}\n"
-            f"*Description:* {workflow['description']}\n"
-            f"*Status:* {workflow['status']}\n"
-            f"*Created:* {workflow['created_at']}\n\n"
-            f"*Trigger:* {workflow['trigger']['type']}\n"
+            f"*Description:* {workflow.get('description', 'No description')}\n"
+            f"*Status:* {workflow.get('status', 'draft')}\n"
+            f"*Actions:* {len(workflow.get('actions', []))} steps\n\n"
+            f"*Trigger:* {workflow.get('trigger', {}).get('type', 'manual')}\n"
         )
-        
-        if workflow.get('last_run'):
-            details_text += f"\n*Last execution:* {workflow['last_run']['timestamp']}\n"
-            details_text += f"*Result:* {workflow['last_run']['status']}\n"
         
         keyboard = [
             [
-                InlineKeyboardButton("▶️ Execute", callback_data=f"execute_workflow_{workflow_id}"),
-                InlineKeyboardButton("🗑️ Delete", callback_data=f"delete_workflow_{workflow_id}")
-            ],
-            [InlineKeyboardButton("🔙 Back to list", callback_data="workflows")]
+                InlineKeyboardButton("▶️ Execute", callback_data=f"execute_{workflow_id}"),
+                InlineKeyboardButton("🗑️ Delete", callback_data=f"delete_{workflow_id}")
+            ]
         ]
         
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -123,10 +117,7 @@ async def show_workflow_details(update: Update, context: ContextTypes.DEFAULT_TY
     except Exception as e:
         logger.error(f"Error fetching workflow details: {str(e)}")
         await query.edit_message_text(
-            f"Error retrieving workflow details: {str(e)}",
-            reply_markup=InlineKeyboardMarkup([[
-                InlineKeyboardButton("🔙 Back to list", callback_data="workflows")
-            ]])
+            f"Error retrieving workflow details: {str(e)}"
         )
 
 async def start_workflow_creation(update: Update, context: ContextTypes.DEFAULT_TYPE, workflow_type: str) -> None:
@@ -209,29 +200,40 @@ async def modify_workflow_before_creation(update: Update, context: ContextTypes.
 async def execute_workflow_command(update: Update, context: ContextTypes.DEFAULT_TYPE, workflow_id: str) -> None:
     """Execute a workflow and show the results."""
     query = update.callback_query
-    user_id = update.effective_user.id
+    telegram_id = str(update.effective_user.id)
     
     await query.edit_message_text("Executing workflow... ⏳")
     
     try:
-        result = await execute_workflow(user_id, workflow_id)
+        result = await execute_workflow(telegram_id, workflow_id, {})
         
-        if result.get("success"):
-            status_text = (
-                f"✅ Workflow executed successfully!\n\n"
-                f"*Results:*\n{result.get('output', 'No output provided')}"
-            )
-        else:
-            status_text = (
-                f"❌ Workflow execution failed.\n\n"
-                f"*Error:*\n{result.get('error', 'Unknown error')}"
-            )
+        # Build status message with output
+        status_text = f"✅ Workflow executed!\n\n"
+        status_text += f"Status: {result.get('status', 'unknown')}\n"
+        status_text += f"Execution ID: {result.get('id', 'N/A')}\n\n"
+        
+        # Show output data if available
+        output_data = result.get('output_data', {})
+        if output_data and len(output_data) > 0:
+            status_text += "📊 *Output:*\n"
+            for key, value in output_data.items():
+                if key != 'input':  # Skip input echo
+                    status_text += f"• {key}: {str(value)[:200]}\n"
+        
+        # Show logs if available
+        logs = result.get('logs', [])
+        if logs and len(logs) > 0:
+            status_text += "\n📝 *Execution Log:*\n"
+            for log in logs[-3:]:  # Show last 3 log entries
+                msg = log.get('message', '')
+                if msg:
+                    status_text += f"• {msg}\n"
         
         await query.edit_message_text(
-            status_text, 
+            status_text,
             parse_mode="Markdown",
             reply_markup=InlineKeyboardMarkup([[
-                InlineKeyboardButton("View Workflow", callback_data=f"view_workflow_{workflow_id}")
+                InlineKeyboardButton("View Workflow", callback_data=f"workflow_{workflow_id}")
             ]])
         )
     
@@ -240,20 +242,20 @@ async def execute_workflow_command(update: Update, context: ContextTypes.DEFAULT
         await query.edit_message_text(
             f"Error executing workflow: {str(e)}",
             reply_markup=InlineKeyboardMarkup([[
-                InlineKeyboardButton("Back", callback_data=f"view_workflow_{workflow_id}")
+                InlineKeyboardButton("Back", callback_data=f"workflow_{workflow_id}")
             ]])
         )
 
 async def delete_workflow_command(update: Update, context: ContextTypes.DEFAULT_TYPE, workflow_id: str) -> None:
     """Delete a workflow after confirmation."""
     query = update.callback_query
-    user_id = update.effective_user.id
+    telegram_id = str(update.effective_user.id)
     
     # First, ask for confirmation
     keyboard = [
         [
             InlineKeyboardButton("Yes, delete it", callback_data=f"confirm_delete_{workflow_id}"),
-            InlineKeyboardButton("No, keep it", callback_data=f"view_workflow_{workflow_id}")
+            InlineKeyboardButton("No, keep it", callback_data=f"workflow_{workflow_id}")
         ]
     ]
     
@@ -366,10 +368,11 @@ async def handle_workflow_selection(update: Update, context: ContextTypes.DEFAUL
     """Handle workflow selection from the list."""
     query = update.callback_query
     await query.answer()
+    telegram_id = str(update.effective_user.id)
     
     try:
         workflow_id = query.data.split('_')[1]
-        workflow = await get_workflow(workflow_id)
+        workflow = await get_workflow(telegram_id, workflow_id)
         
         keyboard = [
             [
@@ -399,18 +402,28 @@ async def handle_workflow_action(update: Update, context: ContextTypes.DEFAULT_T
     """Handle workflow actions (execute/delete)."""
     query = update.callback_query
     await query.answer()
+    telegram_id = str(update.effective_user.id)
     
     try:
         action, workflow_id = query.data.split('_')
         
         if action == "execute":
-            result = await execute_workflow(workflow_id)
-            await query.edit_message_text(
-                f"✅ Workflow executed successfully!\n\n"
-                f"Result: {result.get('message', 'No result message')}"
-            )
+            result = await execute_workflow(telegram_id, workflow_id, {})
+            
+            # Build output message
+            msg = f"✅ Workflow executed!\n\nStatus: {result.get('status', 'unknown')}\n"
+            
+            # Show output data
+            output_data = result.get('output_data', {})
+            if output_data:
+                msg += "\n📊 Output:\n"
+                for key, value in output_data.items():
+                    if key != 'input':
+                        msg += f"• {key}: {str(value)[:150]}\n"
+            
+            await query.edit_message_text(msg)
         elif action == "delete":
-            await delete_workflow(workflow_id)
+            await delete_workflow(telegram_id, workflow_id)
             await query.edit_message_text(
                 "🗑️ Workflow deleted successfully!\n"
                 "Use /workflows to see your remaining workflows."
@@ -426,15 +439,24 @@ async def handle_workflow_execution(update: Update, context: ContextTypes.DEFAUL
     """Handle workflow execution."""
     query = update.callback_query
     await query.answer()
+    telegram_id = str(update.effective_user.id)
     
     try:
         workflow_id = query.data.split('_')[1]
-        result = await execute_workflow(workflow_id)
+        result = await execute_workflow(telegram_id, workflow_id, {})
         
-        await query.edit_message_text(
-            f"✅ Workflow executed successfully!\n\n"
-            f"Result: {result.get('message', 'No result message')}"
-        )
+        # Build output message
+        msg = f"✅ Workflow executed!\n\nStatus: {result.get('status', 'unknown')}\n"
+        
+        # Show output data
+        output_data = result.get('output_data', {})
+        if output_data:
+            msg += "\n📊 Output:\n"
+            for key, value in output_data.items():
+                if key != 'input':
+                    msg += f"• {key}: {str(value)[:150]}\n"
+        
+        await query.edit_message_text(msg)
     except Exception as e:
         logger.error(f"Error executing workflow: {e}")
         await query.edit_message_text(
