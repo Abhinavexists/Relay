@@ -1,610 +1,455 @@
-# Relay - AI-Powered Workflow Automation Platform
+<div align="center">
 
-Relay is a powerful workflow automation platform that enables users to create, manage, and execute complex workflows through natural language descriptions. Built with FastAPI, MongoDB, and integrated with Google's Gemini AI, Relay makes automation accessible through both a REST API and a Telegram bot interface.
+# Relay
 
-## 🌟 Features
+### AI-Powered Workflow Automation Platform
 
-### Core Capabilities
-- **Natural Language Workflow Creation**: Describe workflows in plain English, and AI generates the complete workflow structure
-- **Real Workflow Execution**: Execute workflows with graph traversal, handling complex dependencies and parallel execution
-- **Multiple Action Types**: Support for AI tasks (summarize, extract, classify, generate), HTTP requests, email sending, and data transformation
-- **Telegram Bot Integration**: Create and execute workflows directly from Telegram
-- **JWT Authentication**: Secure API access with JWT tokens and argon2 password hashing
-- **Execution Tracking**: Monitor workflow executions with detailed logs and status updates
+*Create, manage, and execute complex workflows through natural language - no coding required*
 
-### Supported Actions
-- **AI Tasks**: Summarization, extraction, classification, and content generation using Gemini AI
-- **HTTP Requests**: Make API calls to external services
-- **Email**: Send automated emails (simulated, configurable for SMTP)
-- **Data Transformation**: Transform and manipulate data within workflows
+[![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://www.python.org/downloads/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-4.4+-brightgreen.svg)](https://www.mongodb.com/)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## 🏗️ Architecture
+[Features](#-features) • [Quick Start](#-quick-start) • [Documentation](#-documentation) • [Examples](#-examples) • [Contributing](#-contributing)
+
+</div>
+
+---
+
+## What is Relay?
+
+Relay transforms workflow automation by letting you **describe what you want in plain English**. Powered by Google's Gemini AI, it automatically generates and executes workflows - whether you're summarizing documents, making API calls, or orchestrating complex multi-step processes.
+
+### Why Relay?
+
+- **Zero Code Required** - Just describe your workflow in natural language
+- **Instant Execution** - Workflows run immediately with real-time feedback
+- **AI-Powered** - Gemini AI understands context and generates optimal workflows
+- **Telegram Integration** - Manage everything from your phone
+- **Secure by Default** - JWT authentication with argon2 password hashing
+- **Full Observability** - Track every execution with detailed logs
+---
+
+## Quick Start
+
+### Prerequisites
+
+- **Python 3.12+**
+- **Docker & Docker Compose** (recommended)
+- **Google Gemini API key** ([Get one here](https://makersuite.google.com/app/apikey))
+- **Telegram Bot Token** (optional - [Create with @BotFather](https://t.me/botfather))
+
+### Docker Setup (Recommended)
+
+The easiest way to get started:
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/Abhinavexists/Relay.git
+cd Relay
+
+# 2. Run the automated setup script
+sudo ./scripts/setup.sh
+
+# 3. Configure your environment
+# Edit .env file with your API keys (created by setup script)
+nano .env
+
+# 4. Start everything with Docker
+docker-compose up --build
+```
+
+**That's it!** Your Relay instance is now running:
+
+- **API**: <http://localhost:8000>
+- **API Docs**: <http://localhost:8000/docs>
+
+### Manual Setup (Alternative)
+
+If you prefer not to use Docker:
+
+```bash
+# 1. Clone and setup
+git clone https://github.com/Abhinavexists/Relay.git
+cd Relay
+
+# 2. Use our automated run script
+./scripts/run.sh
+```
+
+The run script will:
+
+- Create a virtual environment
+- Install all dependencies
+- Start the backend server
+- Handle environment validation
+
+### Environment Configuration
+
+After running the setup, configure your `.env` file:
+
+```env
+# Required - Get from https://makersuite.google.com/app/apikey
+GEMINI_API_KEY=your_gemini_api_key_here
+
+# Optional - Get from @BotFather on Telegram
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
+
+# Database (default works with Docker)
+MONGODB_URI=mongodb://mongodb:27017
+MONGODB_DB_NAME=workflow_automation
+
+# Security (generate with: python -c "import secrets; print(secrets.token_hex(32))")
+SECRET_KEY=your-secret-key-for-jwt
+```
+
+### First Workflow in 30 Seconds
+
+```bash
+# Register
+curl -X POST http://localhost:8000/api/users/register \
+  -H "Content-Type: application/json" \
+  -d '{"email": "you@example.com", "password": "secure123", "full_name": "Your Name"}'
+
+# Login and get token
+TOKEN=$(curl -X POST http://localhost:8000/api/users/login \
+  -d "username=you@example.com&password=secure123" | jq -r .access_token)
+
+# Create a workflow from natural language
+curl -X POST http://localhost:8000/api/workflows/generate \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"description": "Summarize this: AI is transforming how we work and live."}'
+
+# Execute it (replace WORKFLOW_ID with the ID from above)
+curl -X POST http://localhost:8000/api/execute/WORKFLOW_ID \
+  -H "Authorization: Bearer $TOKEN" -d '{}'
+```
+---
+
+## Configuration
+
+### Environment Variables
+
+Create a `.env` file in the project root with the following variables:
+
+```env
+# API Configuration
+API_HOST=0.0.0.0
+API_PORT=8000
+
+# Database
+MONGODB_URI=mongodb://localhost:27017
+MONGODB_DB_NAME=workflow_automation
+
+# AI Service
+GEMINI_API_KEY=your_gemini_api_key_here
+
+# Authentication
+JWT_SECRET_KEY=your_secret_key_here
+JWT_ALGORITHM=HS256
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
+
+# Telegram Bot (Optional)
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
+
+# Debug
+DEBUG=true
+```
+
+### Getting API Keys
+
+1. **Gemini API Key**:
+   - Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
+   - Sign in with your Google account
+   - Click "Create API Key"
+   - Copy the key to your `.env` file
+
+2. **Telegram Bot Token** (Optional):
+   - Open Telegram and search for [@BotFather](https://t.me/botfather)
+   - Send `/newbot` and follow the instructions
+   - Copy the bot token to your `.env` file
+
+3. **JWT Secret Key**:
+   - Generate a secure random key:
+
+   ```bash
+   python -c "import secrets; print(secrets.token_hex(32))"
+   ```
+
+---
+
+## Understanding Workflows
+
+### What is a Workflow?
+
+A workflow in Relay is a series of automated actions that execute in a specific order. Each workflow consists of:
+
+- **Trigger**: What starts the workflow (manual, scheduled, webhook, or event)
+- **Actions**: Individual tasks to perform (AI operations, API calls, etc.)
+- **Edges**: Connections defining the execution order
+- **Context**: Data passed between actions
+
+### Workflow Structure
+
+```json
+{
+  "name": "Example Workflow",
+  "description": "Summarizes text using AI",
+  "trigger": {
+    "type": "manual",
+    "config": {}
+  },
+  "actions": [
+    {
+      "id": "action_1",
+      "name": "Summarize Text",
+      "type": "summarize",
+      "config": {
+        "text": "Long text to summarize..."
+      }
+    }
+  ],
+  "edges": []
+}
+```
+
+### Action Types Explained
+
+| Action Type | Purpose | Example Use Case |
+|-------------|---------|------------------|
+| `summarize` | Condense long text | Summarize articles, documents |
+| `extract` | Pull specific information | Extract names, dates, key facts |
+| `classify` | Categorize content | Sentiment analysis, topic classification |
+| `generate` | Create new content | Generate emails, responses |
+| `http_request` | Call external APIs | Fetch data, trigger webhooks |
+| `send_email` | Send emails | Notifications, reports |
+| `data_transformation` | Process data | Format conversion, filtering |
+
+### Execution Flow
+
+```
+User Request → AI Generates Workflow → Workflow Saved → Execute Workflow
+                                                              ↓
+                                                    Graph Traversal Engine
+                                                              ↓
+                                                    Execute Actions in Order
+                                                              ↓
+                                                    Return Results + Logs
+```
+---
+
+### API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/users/register` | POST | Create new user account |
+| `/api/users/login` | POST | Authenticate and get JWT token |
+| `/api/workflows/generate` | POST | Generate workflow from natural language |
+| `/api/workflows` | GET | List all workflows |
+| `/api/execute/{id}` | POST | Execute a workflow |
+| `/api/execute/{id}` | GET | Get execution status and results |
+
+### Project Structure
 
 ```
 Relay/
-├── backend/                 # FastAPI backend
-│   ├── api/                # API routes
-│   │   └── routes/         # User, workflow, and execution endpoints
-│   ├── core/               # Security and configuration
-│   ├── database/           # MongoDB connection
-│   ├── models/             # Pydantic models
-│   └── services/           # Business logic (AI, tools, workflows)
-├── telegram_bot/           # Telegram bot integration
-│   ├── handlers/           # Command and callback handlers
-│   └── utils/              # API client for backend communication
-└── verify_backend.py       # Verification script
+├── backend/                     # FastAPI application
+│   ├── api/routes/              # API endpoints(users, workflows, execution)
+│   ├── core/                    # Security, config, and tools
+│   ├── database/                # MongoDB connection and utilities
+│   ├── models/                  # Pydantic data models
+│   ├── services/                # Business logic layer
+│   │   ├── ai_service.py        # Gemini AI integration
+│   │   ├── tool_service.py      # Action executors (HTTP, email, etc.)
+│   │   └── workflow_service.py  # Graph traversal engine
+│   └── utils/                   # Helper functions
+├── telegram_bot/                # Telegram bot interface
+│   ├── handlers/                # Command and message handlers
+│   └── utils/                   # API client for backend communication
+├── scripts/                     # Automation scripts
+│   ├── setup.sh                 # Initial project setup
+│   └── run.sh                   # Development server launcher
+├── docker/                      # Docker configurations
+├── tests/                       # Test suite
+├── docker-compose.yml           # Multi-service orchestration
+├── verify_backend.py            # End-to-end verification script
+├── requirements.txt             # Python dependencies
+└── Contributing.md       
 ```
 
-## 🚀 Quick Start
+---
 
-### Prerequisites
-- Python 3.12+
-- MongoDB
-- Google Gemini API key
-- Telegram Bot Token (optional, for Telegram integration)
+## Examples
 
-### Installation
+### Example 1: Text Summarization via Telegram
 
-1. **Clone the repository**
+```
+You: Summarize this text: "Artificial intelligence is transforming 
+     how we work and live. Machine learning algorithms can now process 
+     vast amounts of data to find patterns and make predictions."
+
+Bot: ✅ I've created a workflow for you!
+     📋 Text Summarization Workflow
+     
+     [▶️ Execute Now] [📊 View Details]
+
+You: *clicks Execute Now*
+
+Bot: ✅ Workflow executed!
+     📊 Output:
+     • ai_result: AI is revolutionizing work and life through ML 
+       algorithms that analyze data for pattern recognition and predictions.
+```
+
+### Example 2: API Integration via REST
+
+```python
+import requests
+
+# Generate a workflow that fetches a random joke
+response = requests.post(
+    "http://localhost:8000/api/workflows/generate",
+    headers={"Authorization": f"Bearer {token}"},
+    json={
+        "description": "Make an HTTP request to get a random joke from "
+                      "https://official-joke-api.appspot.com/random_joke"
+    }
+)
+
+workflow_id = response.json()["id"]
+
+# Execute it
+result = requests.post(
+    f"http://localhost:8000/api/execute/{workflow_id}",
+    headers={"Authorization": f"Bearer {token}"},
+    json={}
+)
+
+print(result.json()["output_data"])
+# Output: {"setup": "Why did the chicken cross the road?", ...}
+```
+
+### Example 3: Chained Workflow
+
 ```bash
-git clone https://github.com/Abhinavexists/Relay.git
-cd Relay
-```
+# Create a workflow that:
+# 1. Fetches data from an API
+# 2. Summarizes it with AI
+# 3. Sends results via email
 
-2. **Set up environment**
-```bash
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-# OR using uv (recommended)
-uv pip install -r requirements.txt
-```
-
-3. **Configure environment variables**
-```bash
-cp .env.example .env
-```
-
-Edit `.env` and add your credentials:
-```env
-GEMINI_API_KEY=your_gemini_api_key_here
-MONGODB_URI=mongodb://localhost:27017
-TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here  # Optional
-JWT_SECRET_KEY=your_secret_key_here
-```
-
-4. **Start MongoDB**
-```bash
-sudo systemctl start mongod
-```
-
-5. **Run the backend**
-```bash
-uvicorn backend.main:app --host 0.0.0.0 --port 8000
-# OR using uv
-uv run uvicorn backend.main:app --host 0.0.0.0 --port 8000
-```
-
-6. **Run the Telegram bot** (optional)
-```bash
-python -m telegram_bot.bot
-# OR using uv
-uv run python -m telegram_bot.bot
-```
-
-## 📖 Usage
-
-### REST API
-
-#### 1. Register a User
-```bash
-curl -X POST http://localhost:8000/api/users/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "user@example.com",
-    "password": "securepassword",
-    "full_name": "John Doe"
-  }'
-```
-
-#### 2. Login
-```bash
-curl -X POST http://localhost:8000/api/users/login \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "username=user@example.com&password=securepassword"
-```
-
-#### 3. Generate a Workflow from Natural Language
-```bash
 curl -X POST http://localhost:8000/api/workflows/generate \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
   -d '{
-    "description": "Summarize this text: Artificial intelligence is transforming how we work and live."
+    "description": "Fetch GitHub user data, summarize their bio, 
+                    and email the summary to admin@example.com"
   }'
 ```
 
-#### 4. Execute a Workflow
+---
+
+## Technology Stack
+
+<div align="left">
+
+| Category | Technologies |
+|----------|-------------|
+| **Backend** | FastAPI, Python 3.12, Pydantic |
+| **Database** | MongoDB, Motor (async driver) |
+| **AI** | Google Gemini API (google-genai SDK) |
+| **Authentication** | JWT, argon2-cffi |
+| **Bot** | python-telegram-bot |
+| **HTTP** | httpx (async client) |
+
+</div>
+
+---
+
+## Testing
+
+Run the verification script to test all components:
+
 ```bash
-curl -X POST http://localhost:8000/api/execute/WORKFLOW_ID \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{}'
-```
-
-#### 5. Get Execution Status
-```bash
-curl -X GET http://localhost:8000/api/execute/EXECUTION_ID \
-  -H "Authorization: Bearer YOUR_TOKEN"
-```
-
-### Telegram Bot
-
-1. **Start the bot**: Send `/start` to your bot
-2. **Create a workflow**: Just describe what you want:
-   - "Summarize this text: [your text here]"
-   - "Make an HTTP request to get a random joke"
-   - "Generate a welcome message for new users"
-3. **Execute**: Click the "▶️ Execute Now" button
-4. **View results**: See the output directly in Telegram
-
-## 🔧 Verification
-
-Run the verification script to test the backend:
-```bash
-python verify_backend.py
-# OR
 uv run python verify_backend.py
 ```
 
-This will test:
-- User registration and login
-- Workflow generation
-- Workflow execution
-- API authentication
+**What it tests:**
 
-## 🛠️ Technology Stack
+- User registration and authentication
+- AI workflow generation
+- Workflow execution with real actions
+- API endpoint security
 
-- **Backend**: FastAPI, Python 3.12
-- **Database**: MongoDB (Motor async driver)
-- **AI**: Google Gemini API (google-genai SDK)
-- **Authentication**: JWT with argon2 password hashing
-- **Telegram**: python-telegram-bot
-- **HTTP Client**: httpx
-
-## 📝 API Endpoints
-
-### Users
-- `POST /api/users/register` - Register a new user
-- `POST /api/users/login` - Login and get JWT token
-- `GET /api/users/me` - Get current user info
-
-### Workflows
-- `GET /api/workflows` - List user's workflows
-- `POST /api/workflows` - Create a workflow manually
-- `POST /api/workflows/generate` - Generate workflow from natural language
-- `GET /api/workflows/{id}` - Get workflow details
-- `PUT /api/workflows/{id}` - Update a workflow
-- `DELETE /api/workflows/{id}` - Delete a workflow
-
-### Execution
-- `POST /api/execute/{workflow_id}` - Execute a workflow
-- `GET /api/execute/{execution_id}` - Get execution status
-- `GET /api/execute/workflow/{workflow_id}` - List all executions for a workflow
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## 📄 License
-
-This project is licensed under the MIT License.
-
-## 🙏 Acknowledgments
-
-- Google Gemini AI for natural language processing
-- FastAPI for the excellent web framework
-- MongoDB for flexible data storage
-- python-telegram-bot for Telegram integration
-
-## 📧 Contact
-
-For questions or support, please open an issue on GitHub.
- - Workflow Automation System
-
-A sophisticated workflow automation platform that leverages artificial intelligence to create and execute automated workflows through a Telegram bot interface. The system currently uses Google's Gemini API for natural language processing, with plans to integrate LangChain and OpenAI technologies in the future to enhance workflow generation and tool orchestration capabilities.
-
-## Table of Contents
-- [Documentation](#-documentation)
-- [Features](#-features)
-- [Architecture Overview](#️-architecture)
-- [Getting Started](#-getting-started)
-- [Usage Guide](#-usage-guide)
-- [Development](#-development)
-- [Security](#-security)
-- [Monitoring](#-monitoring)
-- [Contributing](#-contributing)
-- [Support](#-support)
-
-## Documentation
-
-### System Documentation
-- **[Architecture Documentation](architecture.html)** - Interactive system architecture diagrams and detailed component breakdown
-  - System component interactions
-  - Data flow visualizations
-  - Configuration specifications
-  - Security implementation details
-  - Monitoring and logging setup
-
-## Features
-
-### Core Capabilities
-- **Natural Language Processing**
-  - Intuitive workflow creation through conversation
-  - Context-aware command interpretation
-  - Adaptive response generation
-
-### Interface & Integration
-- **Telegram Bot Interface**
-  - User-friendly command system
-  - Interactive workflow management
-  - Real-time execution monitoring
-
-### Automation Features
-- **Workflow Management**
-  - Automated task execution
-  - Sequential and parallel workflow support
-  - Error handling and recovery
-  - Execution history tracking
-
-### Tool Integration
-- **Email Operations**
-  - Send and receive emails
-  - Attachment handling
-  - Template support
-
-- **File System Operations**
-  - File creation and manipulation
-  - Directory management
-  - File transfer capabilities
-
-- **Web Integration**
-  - Web scraping
-  - API interactions
-  - Data extraction
-
-### Security & Monitoring
-- **Security Features**
-  - JWT authentication
-  - Role-based access control
-  - Encrypted communications
-
-- **System Monitoring**
-  - Real-time logging
-  - Performance metrics
-  - Error tracking
-  - Health monitoring
-
-## Architecture
-
-The system implements a microservices architecture with three primary components:
-
-### 1. Telegram Bot Service (`telegram_bot/`)
-- **User Interaction Layer**
-  - Command processing
-  - Message handling
-  - Callback management
-  - User session management
-
-- **API Integration**
-  - Backend communication
-  - Response formatting
-  - Error handling
-
-### 2. Backend API (`backend/`)
-- **Core Services**
-  - FastAPI-based REST endpoints
-  - Workflow orchestration
-  - User authentication
-  - Data persistence
-
-- **Business Logic**
-  - Workflow validation
-  - Task scheduling
-  - Error management
-  - State management
-
-### 3. AI Service
-- **Current Implementation**
-  - Google Gemini API Integration
-    - Text processing
-    - Command interpretation
-    - Response generation
-
-- **Planned Future Implementation with LangChain**
-  - Natural language understanding
-  - Workflow generation
-  - Context management
-  - Tool selection and orchestration
-
-## 🚀 Getting Started
-
-### System Requirements
-- Python 3.8 or higher
-- Docker Engine 20.10.x or higher
-- Docker Compose 2.x or higher
-- 4GB RAM minimum
-- 10GB available disk space
-
-### Prerequisites
-1. **API Keys**
-   - Telegram Bot Token (from [@BotFather](https://t.me/botfather))
-   - OpenAI API Key (from [OpenAI Platform](https://platform.openai.com))
-   - Google Gemini API Key (from [Google AI Studio](https://makersuite.google.com))
-   > Note: You can use either OpenAI or Gemini as your primary AI provider, or both for different capabilities.
-
-2. **Software Dependencies**
-   - MongoDB 4.4+
-   - Git
-
-### Installation Steps
-
-1. **Clone the Repository**
-   ```bash
-   git clone https://github.com/Abhinavexists/Relay.git
-   cd Relay
-   ```
-
-2. **Environment Configuration**
-
-   Option 1: Using the example file (if available)
-   ```bash
-   cp env-example.txt .env
-   ```
-
-   Option 2: Creating .env file from scratch
-   ```bash
-   # Create .env file
-   touch .env
-   
-   # Open with your preferred editor (e.g., nano, vim, or any text editor)
-   nano .env
-   ```
-
-   Add the following configuration to your `.env` file:
-   ```bash
-   # API Configuration
-   API_HOST=0.0.0.0
-   API_PORT=8000
-
-   # Database Configuration
-   MONGODB_URI=mongodb://mongodb:27017
-   MONGODB_DB_NAME=workflow_automation
-
-   # Bot Configuration
-   TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
-
-   # AI Service Configuration
-   OPENAI_API_KEY=your_openai_api_key_here
-   GEMINI_API_KEY=your_gemini_api_key_here    # (Current Implementation works on this)
-   
-   # Security Configuration
-   SECRET_KEY=your-secret-key-for-jwt
-   DEBUG=true
-   ```
-
-   > **Important Notes for .env Configuration:**
-   > - Replace all placeholder values (e.g., `your_telegram_bot_token_here`) with your actual API keys
-   > - Keep this file secure and never commit it to version control
-   > - Make sure there are no spaces around the '=' sign
-   > - Don't use quotes around values unless they contain spaces
-   > - Each value should be on a new line
-
-   To generate a secure SECRET_KEY, you can use this Python command:
-   ```bash
-   python -c "import secrets; print(secrets.token_urlsafe(32))"
-   ```
-
-### Deployment Options
-
-#### Docker Deployment (Recommended)
-1. **Build and Start Services**
-   ```bash
-   docker-compose up --build
-   ```
-
-2. **Service Access**
-   - Backend API: `http://localhost:8000`
-   - API Documentation: `http://localhost:8000/docs`
-   - MongoDB: `mongodb://localhost:27017`
-   - Telegram Bot: Access through Telegram app
-
-#### Manual Deployment
-1. **Virtual Environment Setup**
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # Windows: venv\Scripts\activate
-   pip install -r requirements.txt
-   ```
-
-2. **Start Services**
-   ```bash
-   # MongoDB
-   mongod
-
-   # Backend API
-   cd backend
-   uvicorn main:app --reload --host 0.0.0.0 --port 8000
-
-   # Telegram Bot
-   cd telegram_bot
-   python main.py
-   ```
-
-## 📱 Usage Guide
-
-### Telegram Bot Commands
-| Command | Description | Example |
-|---------|-------------|---------|
-| `/start` | Initialize bot and get welcome message | `/start` |
-| `/help` | Display available commands and usage | `/help` |
-| `/login` | Authenticate with the system | `/login` |
-| `/workflows` | List all your workflows | `/workflows` |
-| `/create` | Start workflow creation process | `/create daily report` |
-
-### Workflow Creation
-1. Start with `/create` command
-2. Describe your workflow in natural language
-3. Review and confirm the generated workflow
-4. Test the workflow execution
-5. Save or modify as needed
-
-### Workflow Management
-- List workflows using `/workflows`
-- Select workflows for execution
-- Monitor execution progress
-- View execution history
-- Modify or delete workflows
-
-## 🔧 Development
-
-### Project Structure
-```
-workflow-automation/
-├── backend/                 # Backend API service
-│   ├── api/                 # API endpoints
-│   │   ├── routes/          # Route definitions
-│   │   └── middleware/      # Request/response middleware
-│   ├── core/                # Core business logic
-│   │   ├── tools/           # Automation tools
-│   │   └── workflows/       # Workflow management
-│   ├── models/              # Data models
-│   └── services/            # Service implementations
-├── telegram_bot/            # Telegram bot service
-│   ├── handlers/            # Command & message handlers
-│   │   ├── commands/        # Bot commands
-│   │   └── callbacks/       # Inline keyboard handlers
-│   ├── utils/               # Utility functions
-│   └── config.py            # Bot configuration
-├── docker/                  # Docker configuration
-│   ├── backend/             # Backend service Dockerfile
-│   └── bot/                 # Bot service Dockerfile
-├── docs/                    # Additional documentation
-├── tests/                   # Test suites
-├── docker-compose.yml       # Service orchestration
-├── requirements.txt         # Python dependencies
-├── README.md                # Project documentation
-└── architecture.html        # Interactive architecture docs
-```
-
-### Development Guidelines
-1. **Code Style**
-   - Follow PEP 8 guidelines
-   - Use type hints
-   - Document functions and classes
-   - Write unit tests
-
-2. **Feature Development**
-   - Create feature branch from `develop`
-   - Implement changes
-   - Add tests
-   - Update documentation
-   - Submit pull request
-
-3. **Testing**
-   - Run unit tests: `pytest tests/`
-   - Check code coverage
-   - Perform integration testing
-   - Test bot commands manually
-
-## Security
-
-### Authentication
-- JWT-based token authentication
-- Secure token storage
-- Regular token rotation
-- Session management
-
-### Authorization
-- Role-based access control (RBAC)
-- Permission management
-- Resource access control
-- API endpoint protection
-
-### Data Protection
-- Environment variable encryption
-- Secure communication channels
-- Input validation and sanitization
-- Data encryption at rest
-
-## Monitoring
-
-### Application Monitoring
-- Detailed application logs
-- Error tracking and reporting
-- Performance metrics
-- User activity monitoring
-
-### System Metrics
-- Service health checks
-- Resource utilization
-- Response times
-- Error rates
-
-### Alerting
-- Service failure notifications
-- Performance degradation alerts
-- Security incident alerts
-- Custom alert thresholds
+---
 
 ## Contributing
 
-### Contribution Process
-1. Fork the repository
-2. Create a feature branch
-3. Implement changes
-4. Add/update tests
-5. Update documentation
-6. Submit pull request
+We welcome contributions! Please see our [Contributing Guide](Contributing.md) for detailed information about:
 
-### Pull Request Guidelines
-- Clear description of changes
-- Reference related issues
-- Include test results
-- Update documentation
-- Follow code style guidelines
+
+## FAQ
+
+**Q: Do I need a Telegram bot to use Relay?**  
+A: No, the Telegram bot is optional. You can use the REST API directly.
+
+**Q: Can I use OpenAI instead of Gemini?**  
+A: Currently, only Gemini is supported. OpenAI integration is on the roadmap.
+
+**Q: How do I create custom action types?**  
+A: Custom actions aren't supported yet, but it's planned for a future release.
+
+**Q: Is there a limit on workflow executions?**  
+A: No built-in limits, but you're subject to Gemini API rate limits.
+
+**Q: Can workflows run on a schedule?**  
+A: Scheduled triggers are planned but not yet implemented. Currently, only manual triggers work.
+
+**Q: How do I backup my workflows?**  
+A: Workflows are stored in MongoDB. Use `mongodump` to backup:
+
+```bash
+mongodump --db workflow_automation --out /path/to/backup
+```
+
+**Q: Can I share workflows with other users?**  
+A: Not currently. Each user's workflows are private to their account.
+
+**Q: What happens if a workflow action fails?**  
+A: The execution stops, and the error is logged. You can view the error in the execution details.
+
+---
+
+## Roadmap
+
+- [ ] **LangChain Integration** - Enhanced AI orchestration
+- [ ] **OpenAI Support** - Alternative AI provider
+- [ ] **Workflow Scheduler** - Time-based triggers
+- [ ] **Web Dashboard** - Visual workflow builder
+- [ ] **Webhook Triggers** - Event-driven workflows
+- [ ] **Plugin System** - Custom action types
+- [ ] **Multi-language Support** - i18n for Telegram bot
+
+---
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+---
 
-### Technologies
-- [FastAPI](https://fastapi.tiangolo.com/) - Modern web framework
-- [Google Gemini](https://ai.google.dev/) - Current AI provider
-- [LangChain](https://www.langchain.com/) - Planned future AI orchestration
-- [OpenAI](https://openai.com/) - Planned future AI capabilities
+## Acknowledgments
+
+Built with amazing open-source technologies:
+
+- [FastAPI](https://fastapi.tiangolo.com/) - Modern, fast web framework
+- [Google Gemini](https://ai.google.dev/) - Powerful AI capabilities
+- [MongoDB](https://www.mongodb.com/) - Flexible document database
 - [python-telegram-bot](https://python-telegram-bot.org/) - Telegram integration
-- [MongoDB](https://www.mongodb.com/) - Database system
 
-### Additional Resources
-- [FastAPI Documentation](https://fastapi.tiangolo.com/tutorial/)
-- [Telegram Bot API](https://core.telegram.org/bots/api)
-- [Docker Documentation](https://docs.docker.com/)
-- [MongoDB Manual](https://docs.mongodb.com/manual/)
+---
 
-## Support
-
-### Getting Help
-- Open an issue in the GitHub repository
-- Contact the maintainers
-- Join our community channels
-
-## Primary Contributors
+## � Contributors
 
 <table>
   <tr>
@@ -625,8 +470,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
   </tr>
 </table>
 
-### Reporting Issues
-- Use the issue template
-- Provide reproduction steps
-- Include relevant logs
-- Specify environment details
+---
